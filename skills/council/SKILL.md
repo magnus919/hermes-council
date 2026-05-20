@@ -16,6 +16,7 @@ triggers:
   - /council "question"
   - /council quick "question"
   - /council deep "question"
+  - /council hybrid "question"
 ---
 
 # /council — Multi-Agent Structured Debate
@@ -51,12 +52,16 @@ The agents are **not generic archetypes** (Architect, Engineer, etc.). They are 
 ```
                     ┌─ quick:   P0 ─► P1 ─► P2a
                     │─ medium:  P0 ─► P1 ─► P2a ─► P2b
-                    └─ deep:    P0 ─► P1 ─► P2a ─► P2b ─► P3
+                    ├─ deep:    P0 ─► P1 ─► P2a ─► P2b ─► P3
+                    └─ hybrid:  P0 ─► P1 ─► P2a ─► P2b ─► ENSEMBLE
 
-  COMPOSE ──► PREMORTEM ──► POSITION ──► CROSS-A ──► CROSS-B ──► ASSUMPTION MAP
-       │           │              │            │           │             │
-   single       parallel       parallel     parallel    parallel     parallel
-   agent        hermes -z      hermes -z    hermes -z   hermes -z    hermes -z
+  COMPOSE ──► PREMORTEM ──► POSITION ──► CROSS-A ──► CROSS-B
+       │           │              │            │           │
+   single       parallel       parallel     parallel    parallel
+   agent        hermes -z      hermes -z    hermes -z   hermes -z
+                                                                   
+                                                       ┌─► ASSUMPTION MAP (deep)
+                                                       └─► ENSEMBLE (hybrid — independent estimation)
 ```
 
 | Phase | What Happens | Method |
@@ -65,9 +70,10 @@ The agents are **not generic archetypes** (Architect, Engineer, etc.). They are 
 | **0b: Premortem** | Each agent independently writes a history of how the decision **failed** — before any positions are formed. Bypasses positional commitment, surfaces shared assumptions | Parallel `hermes -z` |
 | **1: Position** | Each agent forms an independent initial position on the question, without seeing others | Parallel `hermes -z` |
 | **2a: Cross-examine (Probe)** | Each agent receives all others' positions and **probes for reasoning** — "why do you believe X?" Research shows this is the strongest predictor of group performance gain (R=0.41) | Parallel `hermes -z` |
-| **2b: Cross-examine (Reflect)** (*medium/deep*) | Each agent reflects on what they heard from others — identifies concessions, remaining disagreements, and what evidence would close each gap | Parallel `hermes -z` |
+| **2b: Cross-examine (Reflect)** (*medium/deep/hybrid*) | Each agent reflects on what they heard from others — identifies concessions, remaining disagreements, and what evidence would close each gap | Parallel `hermes -z` |
 | **3: Assumption Map** (*deep only*) | Each agent identifies: what assumptions would need to be true for opposing positions to be correct; where evidence is insufficient; unique risk vectors. **Not convergence** — produces a divergence map | Parallel `hermes -z` |
-| **Synthesis** | Main agent reads all outputs across all rounds and produces a **decision landscape**: shared concerns, genuine disagreement, assumptions per position, evidence gaps, risk vectors | Direct |
+| **3b: Ensemble Estimation** (*hybrid only*) | Each agent independently estimates key dimensions (confidence, risk, success likelihood, uncertainty) — no cross-agent contamination. Aggregated by median to produce robust consensus with dispersion metrics. The antidote to the council's correlated-error weakness. | Parallel `hermes -z` |
+| **Synthesis** | Main agent reads all outputs across all rounds and produces a **decision landscape**: shared concerns, genuine disagreement, assumptions per position, evidence gaps, risk vectors, ensemble estimates | Direct |
 
 ### Effort Levels
 
@@ -76,6 +82,7 @@ The agents are **not generic archetypes** (Architect, Engineer, etc.). They are 
 | `quick` | 3 | P0 → P1 → P2a | 9 | Low-stakes checks, quick friction |
 | `medium` (default) | **5** | P0 → P1 → P2a → P2b | 16 | Standard decisions |
 | `deep` | **5–7** | P0 → P1 → P2a → P2b → Assumption Map | ~20 | Architecture, strategy, high-friction deliberation |
+| `hybrid` | **5–7** | P0 → P1 → P2a → P2b → Ensemble | ~21 | Council for decomposition, ensemble for estimation |
 
 ### Compose Phase (The Key Innovation)
 
@@ -163,6 +170,7 @@ The `/council` skill is triggered **automatically** when the user asks any quest
 | `/council "question"` (any mode) | Run council in specified mode |
 | `/council quick "question"` | 3 agents, P0→P1→P2a |
 | `/council deep "question"` | 5-7 agents, full protocol |
+| `/council hybrid "question"` | 5-7 agents, council + independent ensemble |
 | "Let's get multiple perspectives on X" | Run council, medium mode |
 | "What would experts say about X" | Run council, medium mode |
 | "Debate this: X" or "Council this: X" | Run council, medium mode |
