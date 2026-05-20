@@ -138,12 +138,32 @@ See `references/composition-guide.md` for worked examples and `references/compos
 
 For a high-friction council, the synthesis is a **decision landscape**, not a recommendation. The principal converges internally by reading the map.
 
+**Important: you MUST include a Confidence Dispersion section in every synthesis** (see below). It tells the principal whether the council did its job.
+
 ```
 Council Synthesis: [Topic]
 
-Mode: [quick / medium / deep]
+Mode: [quick / medium / deep / hybrid / premortem]
 Agents: [names]
 Phases: [list]
+
+── Confidence Dispersion ──
+  Agent              Pre    Post   Δ 
+  ─────────────────  ─────  ─────  ───
+  [name]             0.82   0.65   -0.17  Most shifted by meta-anchoring argument
+  [name]             0.78   0.65   -0.13  Dropped most on structural vs procedural
+  [name]             0.80   0.78   -0.02  Held position after cross-examination
+  ─────────────────  ─────  ─────  ───
+  Mean               0.80   0.70   -0.10
+  Dispersion         0.04   0.13   +0.09
+
+  Diagnostic:
+  • Mean confidence DROPPED after debate → council surfaced doubt. ✓ Good.
+  • Dispersion WIDENED after debate → genuine disagreement persisted. ✓ Healthy.
+  • If mean rose and dispersion narrowed → possible false convergence / groupthink.
+
+  (Confidence data from Position and Cross-B rounds. If some agents lack
+  updated confidence, report what's available.)
 
 ── Points of Shared Concern (from Premortem) ──
 • What ALL agents worry about — the failure modes
@@ -152,9 +172,6 @@ Phases: [list]
 ── Points of Genuine Disagreement ──
 • Where positions diverge and why — the specific
   reasoning that separates each camp
-• Confidence dispersion — how much confidence
-  varied (high-dispersion items are where the
-  real debate lives)
 
 ── Assumptions Underlying Each Position ──
 • What would need to be true for each position
