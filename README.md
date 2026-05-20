@@ -1,34 +1,47 @@
 # Hermes Council
 
+<p align="center">
+  <img src="council-logo.png" alt="Hermes Council" width="600"/>
+</p>
+
 **Multi-agent structured debate for [Hermes Agent](https://github.com/NousResearch/hermes-agent).**
 
-Spawn a panel of custom-composed expert agents to debate any question. Agents are designed specifically for each topic — not generic archetypes — and engage in structured rounds of debate to surface genuine multi-perspective analysis.
+Spawn a panel of custom-composed expert agents to debate any question. Agents are designed specifically for each topic — not generic archetypes — and engage in structured rounds of debate to produce a **decision landscape** that makes every defensible position legible.
 
 ## How It Works
 
-A five-phase pipeline, built entirely on Hermes' existing `delegate_task` infrastructure:
+A mode-dependent pipeline, built entirely on Hermes oneshot (`hermes -z`) agents:
 
-```
-Topic ─► COMPOSE ─► POSITION ─► CROSS-EXAMINE ─► CONVERGE ─► SYNTHESIZE
-```
+| Mode | Phases | Agents | Calls |
+|------|--------|--------|-------|
+| `quick` | Premortem → Position → Cross-examine (Probe) | 3 | 9 |
+| `medium` (default) | Premortem → Position → Probe → Reflect | 5 | 16 |
+| `deep` | Premortem → Position → Probe → Reflect → Assumption Map | 5–7 | ~20 |
 
 | Phase | What Happens |
 |-------|-------------|
-| **Compose** | A subagent analyzes the topic and designs 4–6 expert personas with backgrounds, biases, and analytical approaches tailored to the specific question |
-| **Position** | Each agent forms an independent initial position — parallel subagent calls |
-| **Cross-examine** | Each agent reads all other positions and responds — parallel subagent calls |
-| **Converge** (deep mode) | Each agent identifies points of consensus and non-negotiable disagreements |
-| **Synthesize** | Main agent produces a consensus/divergence map with weighted recommendations |
+| **Compose** | A subagent analyzes the topic and designs 3–7 expert personas with backgrounds, biases, and analytical approaches tailored to the specific question |
+| **Premortem** | Each agent independently writes a history of how the decision *failed* — before any positions are formed. Bypasses positional commitment. |
+| **Position** | Each agent forms an independent initial position — parallel oneshot calls |
+| **Cross-examine (Probe)** | Each agent reads all other positions and **probes for reasoning** — research shows this is the strongest predictor of group performance gain (R=0.41) |
+| **Cross-examine (Reflect)** | Each agent reflects on what they heard — concessions, remaining disagreements, what would close each gap |
+| **Assumption Map** (deep) | Each agent maps the assumptions underlying opposing positions. **Not convergence** — produces a divergence map. |
+| **Synthesize** | Main agent produces a **decision landscape**: shared concerns, genuine disagreement, assumptions per position, evidence gaps, risk vectors, principal's path. No forced consensus — the tension IS the output. |
 
 ## Zero New Infrastructure
 
-No Hermes source code changes. No plugins. No MCP servers. Pure SKILL.md + `delegate_task`.
+No Hermes source code changes. No plugins. No MCP servers. Pure `SKILL.md` + `hermes -z` oneshot agents.
 
 ```bash
 # In any Hermes session:
-/skill council
 /council "Should we migrate from SQLite to Postgres?"
+/council quick "Is this a good time to refactor?"
+/council deep "What architecture should we choose for the next 5 years?"
 ```
+
+## Research-Backed Design
+
+The council protocol is grounded in behavioral economics, organizational psychology, and collective intelligence research:
 
 Or directly:
 ```
@@ -38,11 +51,11 @@ Or directly:
 
 ## Effort Levels
 
-| Mode | Agents | Rounds | Use Case |
-|------|--------|--------|----------|
-| `quick` | 3 (hard min) | 2 | Low-stakes checks |
-| `medium` (default) | 5 (research sweet spot) | 2 | Standard decisions |
-| `deep` | 5–7 | 3 + premortem | Architecture, strategy, high-stakes |
+| Mode | Agents | Phases | Subagent Calls | Use Case |
+|------|--------|--------|----------------|----------|
+| `quick` | 3 | P0 → P1 → P2a | 9 | Low-stakes checks, quick friction |
+| `medium` (default) | **5** | P0 → P1 → P2a → P2b | 16 | Standard decisions |
+| `deep` | **5–7** | P0 → P1 → P2a → P2b → Assumption Map | ~20 | Architecture, strategy, high-friction deliberation |
 
 ## Inference
 
