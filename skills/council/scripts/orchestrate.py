@@ -36,6 +36,9 @@ HERMES = str(Path.home() / ".local/bin" / ".hermes-real")
 ENV_FILE = str(Path.home() / ".hermes" / ".env")
 STATE_DIR = "/tmp/hermes-council"
 
+# Full context loaded from --full-context flag, appended to every agent prompt
+FULL_CONTEXT = ""
+
 # Provider/model defaults — resolve via auxiliary.council > delegation > main config.
 def _load_provider_config() -> dict:
     """Load provider config: auxiliary.council > delegation > main config > safe defaults."""
@@ -101,9 +104,22 @@ def _source_env():
 
 
 def _spawn_agent(prompt: str, timeout: int = 90, provider_override: dict = None) -> str:
-    """Spawn a Hermes oneshot agent and return its output."""
+    """Spawn a Hermes oneshot agent and return its output.
+    
+    If FULL_CONTEXT is set (via --full-context flag), it is prepended to the
+    prompt so every agent in every phase has access to the session background.
+    """
     _source_env()
     prov = provider_override or _load_provider_config()
+    
+    # Inject full session context if provided
+    if FULL_CONTEXT:
+        prompt = (
+            f"--- Session Background ---\n"
+            f"{FULL_CONTEXT}\n"
+            f"--- End Session Background ---\n\n"
+            f"{prompt}"
+        )
 
     cmd = [HERMES, "-z", prompt]
     if prov.get("provider"):
@@ -569,6 +585,16 @@ if __name__ == "__main__":
             default_agents = int(sys.argv[i + 1])
         elif a == "--mode" and i + 1 < len(sys.argv):
             mode = sys.argv[i + 1]
+        elif a == "--full-context" and i + 1 < len(sys.argv):
+            ctx_path = sys.argv[i + 1]
+            try:
+                with open(ctx_path) as f:
+                    FULL_CONTEXT = f.read()
+                # Truncate to 150K chars to avoid prompt explosion
+                if len(FULL_CONTEXT) > 150000:
+                    FULL_CONTEXT = FULL_CONTEXT[:150000] + "\n...[truncated]"
+            except Exception as e:
+                print(f"Warning: could not read full-context file: {e}")
 
     if len(sys.argv) > 1 and sys.argv[1] == "compose":
         n = int(sys.argv[2]) if len(sys.argv) > 2 and not sys.argv[2].startswith("--") else default_agents
@@ -642,4 +668,4 @@ if __name__ == "__main__":
         print(f"State saved in {STATE_DIR}/")
     else:
         print(f"Usage: {sys.argv[0]} [compose|premortem|position|cross-a|cross-b|assumption|ensemble|full]")
-        print(f"  full: --mode quick|medium|deep|hybrid --question '...' [--agents N]")
+        print(f"  full: --mode quick|medium|deep|hybrid --question '...' [--agents N] [--full-context /path/to/context.txt]")

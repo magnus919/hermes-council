@@ -28,12 +28,21 @@ When the user invokes `/council "question"` or asks a question that triggers thi
 The correct workflow is:
 
 1. **Extract the question** from the user's invocation
-2. **Enrich the question with session context** — scan your recent session for relevant constraints, decisions, background facts, dead ends already ruled out, and any context that explains *why* the user is asking this question. Append a concise "Given that: ..." clause (2–4 key facts) to the question so the council debates with full context.
-3. **Run the council** via `python3 ~/.hermes/skills/thinking/council/scripts/orchestrate.py full --mode <mode> --question "<enriched_question>"`
-4. **Read the outputs** from `/tmp/hermes-council/`
-5. **Synthesize and present** the decision landscape in readable markdown
+2. **Decide whether to include full session context** — if the user has been discussing the topic at length, dump the recent conversation to a temp file and pass it with `--full-context`:
+   ```bash
+   cat > /tmp/council-ctx.txt << 'EOF'
+   # Dump recent session context here — what's been discussed, what's been decided,
+   # what options have been ruled out, what constraints are known
+   EOF
+   python3 ... --full-context /tmp/council-ctx.txt
+   ```
+   The `--full-context` flag injects the full text into every subagent's prompt so the entire council debates with the full background.
+3. **Enrich the question with session context** — scan your recent session for relevant constraints, decisions, background facts, dead ends already ruled out, and any context that explains *why* the user is asking this question. Append a concise "Given that: ..." clause (2–4 key facts) to the question so the council debates with full context.
+4. **Run the council** via `python3 ~/.hermes/skills/thinking/council/scripts/orchestrate.py full --mode <mode> --question "<enriched_question>"` (add `--full-context /tmp/council-ctx.txt` if you wrote context in step 2)
+5. **Read the outputs** from `/tmp/hermes-council/`
+6. **Synthesize and present** the decision landscape in readable markdown
 
-The council spawns independent Hermes processes with blank context windows. They have no access to your session history. If you don't enrich the question, they debate the question in isolation — missing the very context that makes the question meaningful. This is especially important when the user has been discussing the topic for a while before invoking `/council`.
+The council spawns independent Hermes processes with blank context windows. They have no access to your session history. If you don't enrich the question or provide `--full-context`, they debate the question in isolation — missing the very context that makes the question meaningful. This is especially important when the user has been discussing the topic for a while before invoking `/council`.
 
 If you answer the question yourself instead of running the council, you are defeating the entire purpose of this skill. The council exists precisely because a single-agent answer is less valuable than multi-perspective structured debate.
 
