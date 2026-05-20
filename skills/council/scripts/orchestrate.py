@@ -178,9 +178,7 @@ def phase_compose(topic: str, n_agents: int = 5):
         os.makedirs(STATE_DIR, exist_ok=True)
         with open(f"{STATE_DIR}/agents.json", "w") as f:
             json.dump(agents, f, indent=2)
-        print(f"COMPOSED {len(agents)} agents:")
-        for a in agents:
-            print(f"  {a['name']} ({a['expertise'][:50]}...) [{a.get('confidence_calibration','?')}]")
+        print(f"COMPOSED {len(agents)} agents")
     except json.JSONDecodeError as e:
         print(f"PARSE ERROR: {e}")
         print(f"RAW OUTPUT:\\n{result[:500]}")
@@ -212,11 +210,6 @@ def phase_position(topic: str):
             result = _spawn_agent(prompt, timeout=120)
             result = _strip_fences(result)
             _save_round("position", a["name"], result)
-            try:
-                data = json.loads(result)
-                print(f"  {a['name']}: confidence={data.get('confidence','?')}")
-            except:
-                print(f"  {a['name']}: PARSE ERROR — {result[:100]}")
         
         t = threading.Thread(target=run, args=(agent,))
         threads.append(t)
@@ -227,7 +220,7 @@ def phase_position(topic: str):
         t.join()
     
     positions = _load_round("position")
-    print(f"\\nPOSITIONS COMPLETE: {len(positions)} agents responded")
+    print(f"POSITIONS: {len(positions)} agents")
     return positions
 
 
@@ -277,11 +270,6 @@ def phase_cross(topic: str):
             result = _spawn_agent(prompt, timeout=150)
             result = _strip_fences(result)
             _save_round("cross", a["name"], result)
-            try:
-                data = json.loads(result)
-                print(f"  {a['name']}: confidence={data.get('updated_confidence','?')}")
-            except:
-                print(f"  {a['name']}: PARSE ERROR — {result[:150]}")
         
         t = threading.Thread(target=run, args=(agent,))
         threads.append(t)
@@ -292,7 +280,7 @@ def phase_cross(topic: str):
         t.join()
     
     cross = _load_round("cross")
-    print(f"\\nCROSS-EXAMINATION COMPLETE: {len(cross)} agents responded")
+    print(f"CROSS: {len(cross)} agents")
     return cross
 
 
