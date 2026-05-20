@@ -68,6 +68,17 @@ This tells you whether the council did its job, independent of the qualitative c
 
 ## Research-Backed Design
 
+The council protocol is grounded in behavioral economics, organizational psychology, and collective intelligence research:
+
+| Finding | Source |
+|---------|--------|
+| Probing for reasoning (R=0.41) is the strongest predictor of group performance gain | Karadzhov et al. (2024), 500 Wason task dialogues |
+| Diversity of initial position matters more than expertise per member | Karadzhov et al. — diversity p=0.001, presence of correct answer p=0.079 |
+| Cognitive diversity has an inverted-U effect — too little causes groupthink, too much causes coordination failure | ScienceDirect (2025), organizational psychology |
+| Task conflict improves decisions; relationship conflict destroys them | NeuroLeadership Institute, constructive conflict research |
+| Forced convergence produces false consensus — agents agree on conclusions they don't believe | Inverted-U research, Nesta collective intelligence review |
+| Independent ensemble averaging beats deliberative panels by ~15-25% on probability estimation | Vasudevan (conceded by all agents in the council's own meta-debate) |
+
 ## Effort Levels
 
 | Mode | Agents | Phases | Subagent Calls | Use Case |
