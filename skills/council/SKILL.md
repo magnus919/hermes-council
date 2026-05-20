@@ -47,31 +47,47 @@ Topic ─► COMPOSE ─► POSITION ─► CROSS-EXAMINE ─► CONVERGE ─►
 
 ### Effort Levels
 
-| Mode | Rounds | Agents | Cost | When |
-|------|--------|--------|------|------|
-| `quick` | 2 (Position + Cross-examine) | 3 agents | ~7 subagent calls | Low-stakes, broad checks |
-| `medium` (default) | 3 (Position + Cross-examine + Converge) | 4 agents | ~13 subagent calls | Standard use |
-| `deep` | 3 + full synthesis report | 5–6 agents | ~19 subagent calls | High-stakes architecture decisions |
+| Mode | Agents | Rounds | Use Case |
+|------|--------|--------|----------|
+| `quick` | 3 (hard min) | 2 rounds | Low-stakes checks |
+| `medium` (default) | **5 (research sweet spot)** | 2 rounds | Standard decisions |
+| `deep` | **5–7** | 3 rounds + premortem | Architecture, strategy |
 
 ### Compose Phase (The Key Innovation)
 
-The compose phase is a single `delegate_task` with a prompt like:
+The compose phase is a single `delegate_task` (or Hermes oneshot agent) with a prompt like:
 
-> For the question "[topic]", design N expert debating agents.
-> For each agent: name, one-paragraph career background, specific expertise,
-> analytical approach, and what bias or experience they bring to THIS question.
-> Design them to create productive friction — real disagreement grounded in
-> real experience, not caricatures. Return structured JSON.
+> For the question "[topic]", design **5** expert debating agents.
+>
+> **Critical directive:** Prioritize **diversity of initial position** over diversity of expertise.
+> Research shows that a group with four distinct approaches to a problem — none individually
+> correct — outperforms a group with more expertise but shared framing.
+>
+> For each agent: name, one-paragraph career background, specific expertise, analytical
+> approach, and what bias or experience they bring to THIS question. At least one agent
+> should be structurally skeptical (a "light red team" role). At least one agent should
+> approach the problem from a fundamentally different cognitive frame than the others.
+>
+> Design them to create productive friction — real disagreement grounded in real
+> experience, not caricatures. Ensure every position is defensible.
+>
+> Return structured JSON.
 
 The output is a roster of persona definitions that get passed into every subsequent `delegate_task` context, giving each subagent a richly textured identity formed specifically for this topic.
 
 ## Composition Guidance
 
-**Never use generic types.** Every agent must be composed for the specific topic. See `references/composition-guide.md` for worked examples.
+**Diversity of initial position > diversity of expertise.** Research (Karadzhov et al. 2024) shows that a group of four people who approach a problem from four distinct angles, none individually correct, will converge on a better answer than four people who already know the right answer but think about it the same way.
 
-**4–6 well-composed agents outperform 12 generic ones.** The goal is productive friction — each agent should bring a genuinely different lens. If two agents would mostly agree, one is redundant.
+**4–7 people, 5 is the research sweet spot.** Below 3, you lack idea pool diversity. Above 7, coordination costs degrade deliberation.
 
-**Design roles around the topic, not a menu.** A database migration question needs different expertise than a security architecture question. The compose phase handles this automatically by analyzing the topic before designing the panel.
+**At least one structurally skeptical member.** Assign a light red team role — someone whose default posture is to stress-test the leading plan. Not as an adversary, but as a scheduled obligation.
+
+**At least one fundamentally different cognitive frame.** Someone who approaches problems from first principles when everyone else is being pragmatic, or vice versa. The inverted-U research shows this prevents groupthink while staying within communication range.
+
+**Design for task conflict, not relationship conflict.** Agents should disagree on conclusions, not on each other's competence. Every position should be defensible and grounded in real experience.
+
+See `references/composition-guide.md` for worked examples and `references/composition-research.md` for the full research synthesis.
 
 ## Output Format
 

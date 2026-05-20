@@ -90,14 +90,18 @@ def _load_round(round_name: str) -> dict:
     return results
 
 
-def phase_compose(topic: str, n_agents: int = 4):
+def phase_compose(topic: str, n_agents: int = 5):
     """Phase 1: Generate expert agent roster."""
     prompt = (
-        f'Design {n_agents} expert debating agents for the question: "{topic}"\\n\\n'
+        f'Design {n_agents} expert debating agents for the question: "{topic}"\n\n'
+        f"CRITICAL DIRECTIVE: Prioritize diversity of INITIAL POSITION over diversity "
+        f"of expertise. Research shows that a group with distinct approaches to a "
+        f"problem outperforms a group with more expertise but shared framing.\n\n"
         f"For each agent provide: name (first and last), background paragraph, "
-        f"expertise, analytical_approach, bias, confidence_calibration (0.0-1.0).\\n\\n"
-        f"Design them to create productive friction — real disagreement grounded "
-        f"in real experience, not caricatures.\\n\\n"
+        f"expertise, analytical_approach, bias, confidence_calibration (0.0-1.0).\n\n"
+        f"At least one agent should be structurally skeptical (light red team role). "
+        f"At least one agent should approach the problem from a fundamentally different "
+        f"cognitive frame. Every position should be defensible.\n\n"
         f"Return ONLY a raw JSON array. No markdown, no code fences, no explanation. "
         f"Start with [ and end with ]."
     )
@@ -134,15 +138,17 @@ def phase_position(topic: str):
     threads = []
     for agent in agents:
         prompt = (
-            f"You are {agent['name']}.\\n\\n"
-            f"BACKGROUND: {agent['background']}\\n"
-            f"EXPERTISE: {agent['expertise']}\\n"
-            f"APPROACH: {agent['analytical_approach']}\\n"
-            f"BIAS: {agent['bias']}\\n\\n"
-            f"Question: {topic}\\n\\n"
-            f"Form your initial position on this question. Return JSON only: "
+            f"You are {agent['name']}.\n\n"
+            f"BACKGROUND: {agent['background']}\n"
+            f"EXPERTISE: {agent['expertise']}\n"
+            f"APPROACH: {agent['analytical_approach']}\n"
+            f"BIAS: {agent['bias']}\n\n"
+            f"Question: {topic}\n\n"
+            f"Form your initial position on this question. Be specific and grounded in your experience. "
+            f"Return JSON only: "
             f'{{"position": "...", "reasoning": ["...",], "concerns": ["..."], '
-            f'"confidence": 0.0-1.0, "evidence_needed": ["..."]}}'
+            f'"confidence": 0.0-1.0, '
+            f'"evidence_needed": "Single piece of evidence that would change your mind"}}'
         )
         def run(a):
             result = _spawn_agent(prompt, timeout=120)
@@ -188,17 +194,24 @@ def phase_cross(topic: str):
                     others += f"  - {r}\\n"
         
         prompt = (
-            f"You are {agent['name']}.\\n\\n"
-            f"BACKGROUND: {agent['background']}\\n"
-            f"EXPERTISE: {agent['expertise']}\\n"
-            f"APPROACH: {agent['analytical_approach']}\\n"
-            f"BIAS: {agent['bias']}\\n\\n"
-            f"Question: {topic}\\n\\n"
-            f"Here are the positions of the other council members:\\n{others}\\n\\n"
-            f"Respond to their positions. What do you concede? What do you disagree with? "
-            f"Has your position changed?\\n\\n"
+            f"You are {agent['name']}.\n\n"
+            f"BACKGROUND: {agent['background']}\n"
+            f"EXPERTISE: {agent['expertise']}\n"
+            f"APPROACH: {agent['analytical_approach']}\n"
+            f"BIAS: {agent['bias']}\n\n"
+            f"Question: {topic}\n\n"
+            f"Here are the positions of the other council members:\n{others}\n\n"
+            f"Research shows that PROBING FOR REASONING — asking 'why do you believe X?' "
+            f"and 'what evidence supports that?' — is the single most effective mechanism "
+            f"for producing better group decisions. Prioritize probing for reasoning over "
+            f"proposing solutions.\n\n"
+            f"For each point of disagreement: ask yourself why the other agent holds that "
+            f"position before dismissing it. What can you concede? Where does disagreement "
+            f"remain genuinely unresolved?\n\n"
             f"Return JSON only: "
-            f'{{"revised_position": "...", "conceded_to": [{{"agent":"name","point":"..."}}], '
+            f'{{"revised_position": "...", '
+            f'"conceded_to": [{{"agent":"name","point":"...","what_changed_my_mind":"..."}}], '
+            f'"probes_for_reasoning": [{{"agent":"name","question":"...","response":"..."}}], '
             f'"disagrees_with": [{{"agent":"name","point":"..."}}], '
             f'"new_insights": ["..."], "updated_confidence": 0.0-1.0}}'
         )

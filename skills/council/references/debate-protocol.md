@@ -2,7 +2,17 @@
 
 ## Round Structure
 
+### Round 0: Silent Independent Preference (Premortem — deep mode only)
+
+Before any positions are formed, each agent independently answers:
+
+> "Imagine the decision being debated was made and failed completely. Write a brief history of how that failure happened."
+
+This surfaces hidden assumptions and risks before anyone is committed to a position. Each agent's premortem is private — not shared with other agents — but collected for the synthesis phase.
+
 ### Round 1: Position Formation
+
+Each agent forms their initial position **without seeing others' positions** (prevents anchoring). 
 
 Each agent receives:
 - Their composed persona definition (background, bias, analytical approach)
@@ -23,27 +33,33 @@ Produces structured JSON:
     "What would need to be true for the alternative to be better"
   ],
   "confidence": 0.0-1.0,
-  "evidence_needed": [
-    "What information would change their mind"
-  ]
+  "evidence_needed": "Single piece of evidence that would change their mind",
+  "premortem": "Their premortem scenario (deep mode only)"
 }
 ```
 
-### Round 2: Cross-Examination
+### Round 2: Cross-Examination — Probing for Reasoning
+
+Research (Karadzhov et al. 2024) shows that **probing for reasoning** — asking "why do you believe X?" and "what evidence supports that?" — is the single strongest predictor of group performance gain. This round is structured around that mechanism.
 
 Each agent receives:
 - Their own Round 1 output
-- All other agents' Round 1 outputs (anonymized or attributed — see below)
+- All other agents' Round 1 outputs (attributed)
 - The original question
+- The confidence dispersion (how much confidence varied across agents — high-dispersion items are the debate focus)
 
-**Attribution decision:** In PAII's Council, transcripts are visible and attributed. This creates accountability — agents can be called out. Anonymous cross-examination reduces posturing but loses the social dynamic. Default: attributed.
+**Instructions:** Prioritize probing for reasoning over proposing solutions. For each point of disagreement, ask why the other agent holds that position before stating your counter-position. Identify what you can concede and where your disagreement remains genuinely unresolved.
 
 Produces structured JSON:
 ```json
 {
   "revised_position": "Updated stance after reading other perspectives",
   "conceded_to": [
-    {"agent": "Name", "point": "What was conceded and why"}
+    {"agent": "Name", "point": "What was conceded and why", "what_changed_my_mind": "The specific reasoning or evidence that shifted my view"}
+  ],
+  "probes_for_reasoning": [
+    {"agent": "Name", "question": "What I asked them about their reasoning"},
+    {"agent": "Name", "response": "How they answered or what I inferred"}
   ],
   "disagrees_with": [
     {"agent": "Name", "point": "What remains unresolved and why"}

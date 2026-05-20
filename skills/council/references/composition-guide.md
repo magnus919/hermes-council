@@ -2,9 +2,9 @@
 
 ## The Core Principle
 
-**Design roles around the topic, not a menu.**
+**Diversity of initial position > diversity of expertise.** Research (Karadzhov et al. 2024) demonstrates that a group of four people who approach a problem from four distinct angles, none individually correct, will converge on a better answer than a group of four people two of whom already know the right answer but think about it the same way.
 
-Generic archetypes (Architect, Engineer, Designer) produce shallow, predictable perspectives. A council debating "should we migrate to Postgres" needs agents who have *been burned by migrations* and agents who have *saved companies with them* — not generic "engineer" and "architect" labels.
+**Design roles around the topic, not a menu.** Generic archetypes (Architect, Engineer, Designer) produce shallow, predictable perspectives. A council debating "should we migrate to Postgres" needs agents who have *been burned by migrations* and agents who have *saved companies with them* — not generic "engineer" and "architect" labels.
 
 ## Composition Strategy
 
