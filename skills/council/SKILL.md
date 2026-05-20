@@ -3,8 +3,8 @@ name: council
 title: /council — Multi-Agent Structured Debate
 description: >-
   Spawn a panel of custom-composed expert agents to debate any question.
-  Structured rounds: compose → position → cross-examine → converge → synthesize.
-  Zero new Hermes infrastructure — pure delegate_task + skill system.
+  Structured rounds: premortem → position → cross-examine (probe + reflect)
+  → assumption map. Zero new Hermes infrastructure — pure hermes -z oneshot processes.
 version: 0.1.0
 author: Jasper
 tags: [debate, multi-agent, council, thinking, reasoning]
@@ -28,30 +28,36 @@ The agents are **not generic archetypes** (Architect, Engineer, etc.). They are 
 
 ## How It Works
 
-### Pipeline (5 phases)
+### Pipeline (5 phases, mode-dependent)
 
 ```
-Topic ─► COMPOSE ─► POSITION ─► CROSS-EXAMINE ─► CONVERGE ─► SYNTHESIZE
-                      │             │               │
-                  parallel       parallel        parallel
-                 delegate_task  delegate_task   delegate_task
+                    ┌─ quick:   P0 ─► P1 ─► P2a
+                    │─ medium:  P0 ─► P1 ─► P2a ─► P2b
+                    └─ deep:    P0 ─► P1 ─► P2a ─► P2b ─► P3
+
+  COMPOSE ──► PREMORTEM ──► POSITION ──► CROSS-A ──► CROSS-B ──► ASSUMPTION MAP
+       │           │              │            │           │             │
+   single       parallel       parallel     parallel    parallel     parallel
+   agent        hermes -z      hermes -z    hermes -z   hermes -z    hermes -z
 ```
 
 | Phase | What Happens | Method |
 |-------|-------------|--------|
-| **1. Compose** | A single `delegate_task` analyzes the topic and designs 4–6 expert personas with backgrounds, biases, and analytical approaches | 1 subagent |
-| **2. Position** | Each composed agent forms an independent initial position on the question | Parallel `delegate_task` (batched at 3 concurrent) |
-| **3. Cross-examine** | Each agent receives all other agents' positions and responds — defends, concedes, or crystallizes disagreement | Parallel `delegate_task` |
-| **4. Converge** (deep only) | Each agent reads full debate transcript and identifies points of agreement and non-negotiable red lines | Parallel `delegate_task` |
-| **5. Synthesize** | Main agent reads all outputs across all rounds and produces consensus/divergence map + recommendation | Direct |
+| **0: Compose** | A single agent analyzes the topic and designs 3–7 expert personas with backgrounds, biases, and analytical approaches | 1 `hermes -z` |
+| **0b: Premortem** | Each agent independently writes a history of how the decision **failed** — before any positions are formed. Bypasses positional commitment, surfaces shared assumptions | Parallel `hermes -z` |
+| **1: Position** | Each agent forms an independent initial position on the question, without seeing others | Parallel `hermes -z` |
+| **2a: Cross-examine (Probe)** | Each agent receives all others' positions and **probes for reasoning** — "why do you believe X?" Research shows this is the strongest predictor of group performance gain (R=0.41) | Parallel `hermes -z` |
+| **2b: Cross-examine (Reflect)** (*medium/deep*) | Each agent reflects on what they heard from others — identifies concessions, remaining disagreements, and what evidence would close each gap | Parallel `hermes -z` |
+| **3: Assumption Map** (*deep only*) | Each agent identifies: what assumptions would need to be true for opposing positions to be correct; where evidence is insufficient; unique risk vectors. **Not convergence** — produces a divergence map | Parallel `hermes -z` |
+| **Synthesis** | Main agent reads all outputs across all rounds and produces a **decision landscape**: shared concerns, genuine disagreement, assumptions per position, evidence gaps, risk vectors | Direct |
 
 ### Effort Levels
 
-| Mode | Agents | Rounds | Use Case |
-|------|--------|--------|----------|
-| `quick` | 3 (hard min) | 2 rounds | Low-stakes checks |
-| `medium` (default) | **5 (research sweet spot)** | 2 rounds | Standard decisions |
-| `deep` | **5–7** | 3 rounds + premortem | Architecture, strategy |
+| Mode | Agents | Phases | Subagent Calls | Use Case |
+|------|--------|--------|----------------|----------|
+| `quick` | 3 | P0 → P1 → P2a | 9 | Low-stakes checks, quick friction |
+| `medium` (default) | **5** | P0 → P1 → P2a → P2b | 16 | Standard decisions |
+| `deep` | **5–7** | P0 → P1 → P2a → P2b → Assumption Map | ~20 | Architecture, strategy, high-friction deliberation |
 
 ### Compose Phase (The Key Innovation)
 
@@ -91,32 +97,43 @@ See `references/composition-guide.md` for worked examples and `references/compos
 
 ## Output Format
 
-### Synthesis Report
+### Synthesis Report (Decision Landscape — all modes)
+
+For a high-friction council, the synthesis is a **decision landscape**, not a recommendation. The principal converges internally by reading the map.
 
 ```
-╔══════════════════════════════════════════════════╗
-║  Council Synthesis: [Topic]                     ║
-╠══════════════════════════════════════════════════╣
-║                                                  ║
-║  Panel: [Agent 1], [Agent 2], ..., [Agent N]    ║
-║  Mode: [quick / medium / deep]                  ║
-║  Rounds: [N]                                    ║
-║                                                  ║
-║  ── Points of Consensus ──                      ║
-║  • What every agent agreed on                    ║
-║                                                  ║
-║  ── Points of Divergence ──                     ║
-║  • Where they disagreed and why                  ║
-║                                                  ║
-║  ── Key Insights ──                              ║
-║  • What emerged that wasn't obvious at the start ║
-║                                                  ║
-║  ── Recommendation ──                            ║
-║  • Weighted by confidence and domain relevance   ║
-║    Security concerns weighted higher for infra   ║
-║    Business concerns weighted higher for         ║
-║    strategy decisions                            ║
-╚══════════════════════════════════════════════════╝
+Council Synthesis: [Topic]
+
+Mode: [quick / medium / deep]
+Agents: [names]
+Phases: [list]
+
+── Points of Shared Concern (from Premortem) ──
+• What ALL agents worry about — the failure modes
+  that appeared across multiple premortem scenarios
+
+── Points of Genuine Disagreement ──
+• Where positions diverge and why — the specific
+  reasoning that separates each camp
+• Confidence dispersion — how much confidence
+  varied (high-dispersion items are where the
+  real debate lives)
+
+── Assumptions Underlying Each Position ──
+• What would need to be true for each position
+  to be correct
+• Where the evidence is insufficient to resolve
+
+── Risk Vectors ──
+• Failure modes each position carries that the
+  others don't
+• Single metric or signal each agent would watch
+  to know if they're wrong
+
+── Principal's Path ──
+• Given all of the above, the choices available
+  and the tradeoffs each entails
+• No forced consensus — the tension IS the output
 ```
 
 ## Activation
