@@ -127,9 +127,30 @@ The skill auto-routes on:
 - `/council deep "question"` — full protocol, 3 rounds, 5-6 agents
 - Phrases like "let's get multiple perspectives", "what would experts say", "debate this", "council"
 
-## References
+## Inference
 
-- `references/composition-guide.md` — worked examples for composing councils by topic domain
+Council sub-agents are spawned as independent Hermes processes (`hermes -z`). They resolve their provider and model from your Hermes config in this order:
+
+1. **`delegation` section** in `~/.hermes/config.yaml` — `delegation.provider` and `delegation.model`. This section is designed for sub-agent inference and is the recommended place to configure council-specific provider settings.
+2. **`model` section** — falls back to your main agent's provider and model.
+3. **Built-in fallback** — `deepseek` / `deepseek-v4-flash` as a last resort.
+
+To set a dedicated model for council agents:
+```yaml
+# ~/.hermes/config.yaml
+delegation:
+  provider: openrouter
+  model: anthropic/claude-sonnet-4
+```
+
+Or use your main provider:
+```yaml
+delegation:
+  provider: deepseek
+  model: deepseek-v4-flash
+```
+
+If `delegation` is not configured at all, council agents inherit your main session's provider and model.
 - `references/personas/` — example persona templates (used by the compose phase as seed data)
 - `references/debate-protocol.md` — round structure, timing, output format for each phase
 - `scripts/orchestrate.py` — optional orchestrator for managing the round lifecycle

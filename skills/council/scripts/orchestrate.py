@@ -21,13 +21,53 @@ Usage:
 
 import json, os, subprocess, sys, time, glob, threading
 from pathlib import Path
-
 HERMES = str(Path.home() / ".local/bin" / ".hermes-real")
 ENV_FILE = str(Path.home() / ".hermes" / ".env")
 STATE_DIR = "/tmp/hermes-council"
 
+# Provider/model defaults — read from Hermes config delegation section,
+# fall back to main provider, never hardcode.
+def _load_provider_config() -> dict:
+    """Load provider config: delegation section > main config > safe defaults."""
+    try:
+        import yaml
+        config_path = str(Path.home() / ".hermes" / "config.yaml")
+        if os.path.exists(config_path):
+            with open(config_path) as f:
+                cfg = yaml.safe_load(f) or {}
+            
+            # Check delegation section first (it's designed for this)
+            delegation = cfg.get("delegation", {})
+            if delegation.get("provider") or delegation.get("base_url"):
+                return {
+                    "provider": delegation.get("provider", "deepseek"),
+                    "model": delegation.get("model", "deepseek-v4-flash"),
+                    "base_url": delegation.get("base_url", ""),
+                    "api_key": delegation.get("api_key", ""),
+                }
+            
+            # Fall back to main model config
+            model_cfg = cfg.get("model", {})
+            return {
+                "provider": model_cfg.get("provider", "deepseek"),
+                "model": model_cfg.get("default", "deepseek-v4-flash"),
+                "base_url": model_cfg.get("base_url", ""),
+                "api_key": "",
+            }
+    except Exception:
+        pass
+    
+    # Ultimate fallback — should only trigger if config is unreadable
+    return {
+        "provider": "deepseek",
+        "model": "deepseek-v4-flash",
+        "base_url": "",
+        "api_key": "",
+    }
+
+
 def _source_env():
-    """Load .env into process environment."""
+    """Load .env into process environment for child Hermes processes."""
     if not os.path.exists(ENV_FILE):
         return
     with open(ENV_FILE) as f:
@@ -39,10 +79,19 @@ def _source_env():
                 k, v = line.split("=", 1)
                 os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
 
-def _spawn_agent(prompt: str, timeout: int = 90) -> str:
+
+def _spawn_agent(prompt: str, timeout: int = 90, provider_override: dict = None) -> str:
     """Spawn a Hermes oneshot agent and return its output."""
     _source_env()
-    cmd = [HERMES, "-z", prompt, "--provider", "deepseek", "-m", "deepseek-v4-flash"]
+    prov = provider_override or _load_provider_config()
+    
+    cmd = [HERMES, "-z", prompt]
+    if prov.get("provider"):
+        cmd += ["--provider", prov["provider"]]
+    if prov.get("model"):
+        cmd += ["-m", prov["model"]]
+    if prov.get("base_url"):
+        os.environ["OPENAI_BASE_URL"] = prov["base_url"]
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
         return result.stdout.strip()
