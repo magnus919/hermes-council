@@ -298,10 +298,21 @@ def phase_cross(topic: str):
 
 if __name__ == "__main__":
     _source_env()
-    topic = "Should we use WebSockets or Server-Sent Events for real-time notifications in a web application?"
+    
+    # Support env var override for the question (for Docker/CI use)
+    topic = os.environ.get("COUNCIL_QUESTION") or "Should we use WebSockets or Server-Sent Events for real-time notifications in a web application?"
+    default_agents = int(os.environ.get("COUNCIL_AGENTS", "5"))
+    
+    # Parse --question and --agents flags from args
+    extra_args = [a for a in sys.argv[1:] if not a.startswith("--")]
+    for i, a in enumerate(sys.argv):
+        if a == "--question" and i + 1 < len(sys.argv):
+            topic = sys.argv[i + 1]
+        elif a == "--agents" and i + 1 < len(sys.argv):
+            default_agents = int(sys.argv[i + 1])
     
     if len(sys.argv) > 1 and sys.argv[1] == "compose":
-        n = int(sys.argv[2]) if len(sys.argv) > 2 else 4
+        n = int(sys.argv[2]) if len(sys.argv) > 2 and not sys.argv[2].startswith("--") else default_agents
         phase_compose(topic, n)
     elif len(sys.argv) > 1 and sys.argv[1] == "position":
         phase_position(topic)
@@ -309,12 +320,12 @@ if __name__ == "__main__":
         phase_cross(topic)
     elif len(sys.argv) > 1 and sys.argv[1] == "full":
         print("=== PHASE 1: COMPOSE ===")
-        agents = phase_compose(topic, 4)
+        agents = phase_compose(topic, default_agents)
         if not agents:
             sys.exit(1)
-        print("\\n=== PHASE 2: POSITION ===")
+        print("\n=== PHASE 2: POSITION ===")
         positions = phase_position(topic)
-        print("\\n=== PHASE 3: CROSS-EXAMINATION ===")
+        print("\n=== PHASE 3: CROSS-EXAMINATION ===")
         cross = phase_cross(topic)
         print("\\n=== ALL PHASES COMPLETE ===")
         print(f"State saved in {STATE_DIR}/")
