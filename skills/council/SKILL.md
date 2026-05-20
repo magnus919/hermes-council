@@ -17,6 +17,7 @@ triggers:
   - /council quick "question"
   - /council deep "question"
   - /council hybrid "question"
+  - /council premortem "question"
 ---
 
 # /council — Multi-Agent Structured Debate
@@ -62,7 +63,8 @@ The agents are **not generic archetypes** (Architect, Engineer, etc.). They are 
                     ┌─ quick:   P0 ─► P1 ─► P2a
                     │─ medium:  P0 ─► P1 ─► P2a ─► P2b
                     ├─ deep:    P0 ─► P1 ─► P2a ─► P2b ─► P3
-                    └─ hybrid:  P0 ─► P1 ─► P2a ─► P2b ─► ENSEMBLE
+                    ├─ hybrid:  P0 ─► P1 ─► P2a ─► P2b ─► ENSEMBLE
+                    └─ premortem:  P0 (rapid failure catalog)
 
   COMPOSE ──► PREMORTEM ──► POSITION ──► CROSS-A ──► CROSS-B
        │           │              │            │           │
@@ -92,6 +94,7 @@ The agents are **not generic archetypes** (Architect, Engineer, etc.). They are 
 | `medium` (default) | **5** | P0 → P1 → P2a → P2b | 16 | Standard decisions |
 | `deep` | **5–7** | P0 → P1 → P2a → P2b → Assumption Map | ~20 | Architecture, strategy, high-friction deliberation |
 | `hybrid` | **5–7** | P0 → P1 → P2a → P2b → Ensemble | ~21 | Council for decomposition, ensemble for estimation |
+| `premortem` | **3–5** | P0 (premortem only) | ~4 | Rapid failure catalog, "what could go wrong?" |
 
 ### Compose Phase (The Key Innovation)
 
@@ -180,6 +183,7 @@ The `/council` skill is triggered **automatically** when the user asks any quest
 | `/council quick "question"` | 3 agents, P0→P1→P2a |
 | `/council deep "question"` | 5-7 agents, full protocol |
 | `/council hybrid "question"` | 5-7 agents, council + independent ensemble |
+| `/council premortem "question"` | 3-5 agents, rapid failure catalog only |
 | "Let's get multiple perspectives on X" | Run council, medium mode |
 | "What would experts say about X" | Run council, medium mode |
 | "Debate this: X" or "Council this: X" | Run council, medium mode |

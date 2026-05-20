@@ -11,6 +11,7 @@ Pipeline (mode-dependent):
   medium:  compose → premortem → position → cross_a → cross_b
   deep:    compose → premortem → position → cross_a → cross_b → assumption_map
   hybrid:  compose → premortem → position → cross_a → cross_b → ensemble → synth
+  premortem: compose → premortem (rapid failure catalog, ~4 subagent calls)
 
   0. premortem  — each agent writes a failure history (bypasses positional commitment)
   1. position   — each agent forms initial position (parallel, file-based coordination)
@@ -612,13 +613,15 @@ if __name__ == "__main__":
     elif len(sys.argv) > 1 and sys.argv[1] == "ensemble":
         phase_ensemble(topic)
     elif len(sys.argv) > 1 and sys.argv[1] == "full":
-        if mode not in ("quick", "medium", "deep", "hybrid"):
-            print(f"Unknown mode: {mode}. Use quick, medium, deep, or hybrid.")
+        if mode not in ("quick", "medium", "deep", "hybrid", "premortem"):
+            print(f"Unknown mode: {mode}. Use quick, medium, deep, hybrid, or premortem.")
             sys.exit(1)
 
         # Agent count scaling per mode
         if mode == "quick":
             default_agents = min(default_agents, 3)
+        elif mode == "premortem":
+            default_agents = min(default_agents, 5)  # 3-5, compact
         elif mode in ("deep", "hybrid"):
             default_agents = max(default_agents, 5)
 
@@ -628,7 +631,9 @@ if __name__ == "__main__":
         print(f"Phases: ", end="")
 
         phases = []
-        if mode == "quick":
+        if mode == "premortem":
+            phases = ["premortem"]
+        elif mode == "quick":
             phases = ["premortem", "position", "cross_a"]
         elif mode == "medium":
             phases = ["premortem", "position", "cross_a", "cross_b"]
@@ -646,26 +651,27 @@ if __name__ == "__main__":
         print("\n=== PHASE 0b: PREMORTEM ===")
         premortem = phase_premortem(topic)
 
-        print("\n=== PHASE 1: POSITION ===")
-        positions = phase_position(topic)
+        if mode != "premortem":
+            print("\n=== PHASE 1: POSITION ===")
+            positions = phase_position(topic)
 
-        print("\n=== PHASE 2a: CROSS-EXAMINATION (Probe Reasoning) ===")
-        cross_a = phase_cross_a(topic)
+            print("\n=== PHASE 2a: CROSS-EXAMINATION (Probe Reasoning) ===")
+            cross_a = phase_cross_a(topic)
 
-        if mode in ("medium", "deep", "hybrid"):
-            print("\n=== PHASE 2b: CROSS-EXAMINATION (Reflect & Update) ===")
-            cross_b = phase_cross_b(topic)
+            if mode in ("medium", "deep", "hybrid"):
+                print("\n=== PHASE 2b: CROSS-EXAMINATION (Reflect & Update) ===")
+                cross_b = phase_cross_b(topic)
 
-        if mode == "deep":
-            print("\n=== PHASE 3: ASSUMPTION MAPPING ===")
-            assumption = phase_assumption_map(topic)
+            if mode == "deep":
+                print("\n=== PHASE 3: ASSUMPTION MAPPING ===")
+                assumption = phase_assumption_map(topic)
 
-        if mode == "hybrid":
-            print("\n=== PHASE 3b: ENSEMBLE ESTIMATION (Independent) ===")
-            ensemble = phase_ensemble(topic)
+            if mode == "hybrid":
+                print("\n=== PHASE 3b: ENSEMBLE ESTIMATION (Independent) ===")
+                ensemble = phase_ensemble(topic)
 
         print(f"\n=== ALL PHASES COMPLETE [{mode.upper()}] ===")
         print(f"State saved in {STATE_DIR}/")
     else:
         print(f"Usage: {sys.argv[0]} [compose|premortem|position|cross-a|cross-b|assumption|ensemble|full]")
-        print(f"  full: --mode quick|medium|deep|hybrid --question '...' [--agents N] [--full-context /path/to/context.txt]")
+        print(f"  full: --mode quick|medium|deep|hybrid|premortem --question '...' [--agents N] [--full-context /path/to/context.txt]")
