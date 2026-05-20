@@ -25,10 +25,9 @@ HERMES = str(Path.home() / ".local/bin" / ".hermes-real")
 ENV_FILE = str(Path.home() / ".hermes" / ".env")
 STATE_DIR = "/tmp/hermes-council"
 
-# Provider/model defaults — read from Hermes config delegation section,
-# fall back to main provider, never hardcode.
+# Provider/model defaults — resolve via auxiliary.council > delegation > main config.
 def _load_provider_config() -> dict:
-    """Load provider config: delegation section > main config > safe defaults."""
+    """Load provider config: auxiliary.council > delegation > main config > safe defaults."""
     try:
         import yaml
         config_path = str(Path.home() / ".hermes" / "config.yaml")
@@ -36,7 +35,17 @@ def _load_provider_config() -> dict:
             with open(config_path) as f:
                 cfg = yaml.safe_load(f) or {}
             
-            # Check delegation section first (it's designed for this)
+            # 1. Check auxiliary.council first — designed for this purpose
+            council_aux = cfg.get("auxiliary", {}).get("council", {})
+            if council_aux.get("provider"):
+                return {
+                    "provider": council_aux["provider"],
+                    "model": council_aux.get("model", ""),
+                    "base_url": council_aux.get("base_url", ""),
+                    "api_key": council_aux.get("api_key", ""),
+                }
+            
+            # 2. Check delegation section (standard Hermes sub-agent config)
             delegation = cfg.get("delegation", {})
             if delegation.get("provider") or delegation.get("base_url"):
                 return {
@@ -46,7 +55,7 @@ def _load_provider_config() -> dict:
                     "api_key": delegation.get("api_key", ""),
                 }
             
-            # Fall back to main model config
+            # 3. Fall back to main model config
             model_cfg = cfg.get("model", {})
             return {
                 "provider": model_cfg.get("provider", "deepseek"),

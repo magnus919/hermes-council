@@ -40,9 +40,27 @@ Or directly:
 
 | Mode | Agents | Rounds | Use Case |
 |------|--------|--------|----------|
-| `quick` | 3 | 2 | Low-stakes checks, fast perspective |
-| `medium` (default) | 4 | 3 | Standard decisions |
-| `deep` | 5–6 | 3 + full report | Architecture, strategy, high-stakes |
+| `quick` | 3 (hard min) | 2 | Low-stakes checks |
+| `medium` (default) | 5 (research sweet spot) | 2 | Standard decisions |
+| `deep` | 5–7 | 3 + premortem | Architecture, strategy, high-stakes |
+
+## Inference
+
+Council sub-agents resolve their provider and model in this priority:
+
+1. **`auxiliary.council`** — add a `council` entry under `auxiliary:` in `~/.hermes/config.yaml`
+2. **`delegation` section** — standard Hermes sub-agent delegation config
+3. **`model` section** — your main agent's provider and model
+
+```yaml
+# ~/.hermes/config.yaml
+auxiliary:
+  council:
+    provider: opencode-go
+    model: deepseek-v4-flash
+```
+
+If none are configured, council agents inherit your main session's settings.
 
 ## Composition Philosophy
 
@@ -86,3 +104,13 @@ Then `/skill council` in any Hermes session.
 ## License
 
 MIT
+
+## Inspiration
+
+This project was inspired by **PAII** (Personal AI Infrastructure) by Daniel Miessler, specifically its [Council skill](https://github.com/danielmiessler/Personal_AI_Infrastructure/tree/main/Packs/Council) — a multi-agent debate system that composes custom expert agents with domain expertise, unique voices, and distinct analytical approaches. The Hermes Council implementation adapts PAII's composition philosophy and adversarial collaboration principles to run natively on Hermes Agent's existing infrastructure (oneshot spawning, skill system) with zero external dependencies.
+
+Additional research influences:
+- Karadzhov et al. (2024) — large-scale Wason task dialogue study on group reasoning
+- Kahneman, Sibony & Sunstein — *Noise: A Flaw in Human Judgment* (adversarial collaboration)
+- Berditchevskaia & Bertoncin — Nesta Collective Intelligence Review (group composition)
+- Mercier & Sperber — *The Enigma of Reason* (argumentative theory of reasoning)

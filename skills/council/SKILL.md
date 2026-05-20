@@ -129,28 +129,38 @@ The skill auto-routes on:
 
 ## Inference
 
-Council sub-agents are spawned as independent Hermes processes (`hermes -z`). They resolve their provider and model from your Hermes config in this order:
+Council sub-agents are spawned as independent Hermes processes (`hermes -z`). They resolve their provider and model from your Hermes config in this priority order:
 
-1. **`delegation` section** in `~/.hermes/config.yaml` — `delegation.provider` and `delegation.model`. This section is designed for sub-agent inference and is the recommended place to configure council-specific provider settings.
-2. **`model` section** — falls back to your main agent's provider and model.
-3. **Built-in fallback** — `deepseek` / `deepseek-v4-flash` as a last resort.
+1. **`auxiliary.council`** — if you have a `council` entry under `auxiliary:` in `~/.hermes/config.yaml`, it is used. This follows the same pattern as Hermes' other auxiliary tasks (vision, session_search, etc.) and is the recommended way to configure council-specific inference.
 
-To set a dedicated model for council agents:
+2. **`delegation` section** — `delegation.provider` and `delegation.model`. Falls back to the Hermes sub-agent delegation config if set.
+
+3. **`model` section** — your main agent's provider and model.
+
+4. **Built-in fallback** — `deepseek` / `deepseek-v4-flash` as a last resort.
+
+### Examples
+
+Run council agents on a cheap fast model while using a premium model for your main session:
+
 ```yaml
 # ~/.hermes/config.yaml
-delegation:
-  provider: openrouter
-  model: anthropic/claude-sonnet-4
+auxiliary:
+  council:
+    provider: opencode-go
+    model: deepseek-v4-flash
 ```
 
-Or use your main provider:
+Or use a premium model just for the council:
+
 ```yaml
-delegation:
-  provider: deepseek
-  model: deepseek-v4-flash
+auxiliary:
+  council:
+    provider: openrouter
+    model: anthropic/claude-sonnet-4
 ```
 
-If `delegation` is not configured at all, council agents inherit your main session's provider and model.
+If neither `auxiliary.council` nor `delegation` are configured, council agents inherit your main session's provider and model — no additional config needed.
 - `references/personas/` — example persona templates (used by the compose phase as seed data)
 - `references/debate-protocol.md` — round structure, timing, output format for each phase
 - `scripts/orchestrate.py` — optional orchestrator for managing the round lifecycle
