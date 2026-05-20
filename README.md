@@ -12,11 +12,13 @@ Spawn a panel of custom-composed expert agents to debate any question. Agents ar
 
 A mode-dependent pipeline, built entirely on Hermes oneshot (`hermes -z`) agents:
 
-| Mode | Phases | Agents | Calls |
-|------|--------|--------|-------|
-| `quick` | Premortem → Position → Cross-examine (Probe) | 3 | 9 |
-| `medium` (default) | Premortem → Position → Probe → Reflect | 5 | 16 |
-| `deep` | Premortem → Position → Probe → Reflect → Assumption Map | 5–7 | ~20 |
+| Mode | Phases | Agents | Calls | Use Case |
+|------|--------|--------|-------|----------|
+| `premortem` | Premortem only | 3–5 | ~4 | Rapid failure catalog, "what could go wrong?" |
+| `quick` | Premortem → Position → Probe | 3 | 9 | Low-stakes checks |
+| `medium` (default) | Premortem → Position → Probe → Reflect | 5 | 16 | Standard decisions |
+| `deep` | Premortem → Position → Probe → Reflect → Assumption Map | 5–7 | ~20 | High-friction deliberation |
+| `hybrid` | Premortem → Position → Probe → Reflect → Ensemble | 5–7 | ~21 | Council for decomposition, ensemble for estimation |
 
 | Phase | What Happens |
 |-------|-------------|
@@ -26,7 +28,8 @@ A mode-dependent pipeline, built entirely on Hermes oneshot (`hermes -z`) agents
 | **Cross-examine (Probe)** | Each agent reads all other positions and **probes for reasoning** — research shows this is the strongest predictor of group performance gain (R=0.41) |
 | **Cross-examine (Reflect)** | Each agent reflects on what they heard — concessions, remaining disagreements, what would close each gap |
 | **Assumption Map** (deep) | Each agent maps the assumptions underlying opposing positions. **Not convergence** — produces a divergence map. |
-| **Synthesize** | Main agent produces a **decision landscape**: shared concerns, genuine disagreement, assumptions per position, evidence gaps, risk vectors, principal's path. No forced consensus — the tension IS the output. |
+| **Ensemble** (hybrid) | Each agent independently estimates key dimensions (confidence, risk, success likelihood) — no cross-agent contamination. Aggregated by median. |
+| **Synthesize** | Main agent produces a **decision landscape**: confidence dispersion report, shared concerns, genuine disagreement, assumptions per position, evidence gaps, risk vectors, principal's path. No forced consensus — the tension IS the output. |
 
 ## Zero New Infrastructure
 
@@ -34,28 +37,57 @@ No Hermes source code changes. No plugins. No MCP servers. Pure `SKILL.md` + `he
 
 ```bash
 # In any Hermes session:
-/council "Should we migrate from SQLite to Postgres?"
-/council quick "Is this a good time to refactor?"
-/council deep "What architecture should we choose for the next 5 years?"
+/council "Should we migrate from SQLite to Postgres?"          # medium mode (default)
+/council quick "Is this a good time to refactor?"              # 3 agents, fast check
+/council deep "What architecture should we choose?"            # 5-7 agents, full protocol
+/council hybrid "Estimate the migration risk"                  # council + independent ensemble
+/council premortem "What could go wrong with this approach?"   # rapid failure catalog only
 ```
+
+You can also pass full session context so the council debates with full background:
+
+```bash
+cat > /tmp/council-ctx.txt << 'EOF'
+# Paste recent conversation history, constraints, decisions already made
+EOF
+# Then run with --full-context:
+python3 ~/.hermes/skills/thinking/council/scripts/orchestrate.py full \
+  --mode hybrid \
+  --question "Should we migrate to Postgres, given that..." \
+  --full-context /tmp/council-ctx.txt
+```
+
+## Confidence Dispersion Diagnostic
+
+Every council synthesis includes a **confidence dispersion report** — a per-agent table of pre-debate vs post-debate confidence, mean, dispersion, and a diagnostic:
+
+- **Mean confidence DROPPED + dispersion WIDENED** → council surfaced genuine doubt. ✓ Healthy.
+- **Mean confidence ROSE + dispersion NARROWED** → possible false convergence / groupthink. Red flag.
+
+This tells you whether the council did its job, independent of the qualitative content.
 
 ## Research-Backed Design
 
 The council protocol is grounded in behavioral economics, organizational psychology, and collective intelligence research:
 
-Or directly:
-```
-/council deep "Design the auth architecture for a multi-tenant SaaS"
-/council quick "Is this a good approach?"
-```
+| Finding | Source |
+|---------|--------|
+| Probing for reasoning (R=0.41) is the strongest predictor of group performance gain | Karadzhov et al. (2024), 500 Wason task dialogues |
+| Diversity of initial position matters more than expertise per member | Karadzhov et al. — diversity p=0.001, presence of correct answer p=0.079 |
+| Cognitive diversity has an inverted-U effect — too little causes groupthink, too much causes coordination failure | ScienceDirect (2025), organizational psychology |
+| Task conflict improves decisions; relationship conflict destroys them | NeuroLeadership Institute, constructive conflict research |
+| Forced convergence produces false consensus — agents agree on conclusions they don't believe | Inverted-U research, Nesta collective intelligence review |
+| Independent ensemble averaging beats deliberative panels by ~15-25% on probability estimation | Vasudevan (conceded by all agents in the council's own meta-debate) |
 
 ## Effort Levels
 
 | Mode | Agents | Phases | Subagent Calls | Use Case |
 |------|--------|--------|----------------|----------|
-| `quick` | 3 | P0 → P1 → P2a | 9 | Low-stakes checks, quick friction |
+| `premortem` | 3–5 | P0 (premortem only) | ~4 | Rapid failure catalog |
+| `quick` | 3 | P0 → P1 → P2a | 9 | Low-stakes checks |
 | `medium` (default) | **5** | P0 → P1 → P2a → P2b | 16 | Standard decisions |
-| `deep` | **5–7** | P0 → P1 → P2a → P2b → Assumption Map | ~20 | Architecture, strategy, high-friction deliberation |
+| `deep` | **5–7** | P0 → P1 → P2a → P2b → Assumption Map | ~20 | High-friction deliberation |
+| `hybrid` | **5–7** | P0 → P1 → P2a → P2b → Ensemble | ~21 | Council + independent estimates |
 
 ## Inference
 
@@ -112,7 +144,7 @@ git clone https://github.com/magnus919/hermes-council.git
 ln -s $(pwd)/hermes-council/skills/council ~/.hermes/skills/thinking/council
 ```
 
-Then `/skill council` in any Hermes session.
+Then `/council \"question\"` in any Hermes session. Run `hermes reload-skills` if the skill doesn't appear immediately.
 
 ## License
 
