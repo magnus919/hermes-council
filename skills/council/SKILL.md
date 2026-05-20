@@ -16,6 +16,7 @@ triggers:
   - /council "question"
   - /council quick "question"
   - /council deep "question"
+  - /council hybrid "question"
 ---
 
 # /council — Multi-Agent Structured Debate
@@ -27,12 +28,21 @@ When the user invokes `/council "question"` or asks a question that triggers thi
 The correct workflow is:
 
 1. **Extract the question** from the user's invocation
-2. **Enrich the question with session context** — scan your recent session for relevant constraints, decisions, background facts, dead ends already ruled out, and any context that explains *why* the user is asking this question. Append a concise "Given that: ..." clause (2–4 key facts) to the question so the council debates with full context.
-3. **Run the council** via `python3 ~/.hermes/skills/thinking/council/scripts/orchestrate.py full --mode <mode> --question "<enriched_question>"`
-4. **Read the outputs** from `/tmp/hermes-council/`
-5. **Synthesize and present** the decision landscape in readable markdown
+2. **Decide whether to include full session context** — if the user has been discussing the topic at length, dump the recent conversation to a temp file and pass it with `--full-context`:
+   ```bash
+   cat > /tmp/council-ctx.txt << 'EOF'
+   # Dump recent session context here — what's been discussed, what's been decided,
+   # what options have been ruled out, what constraints are known
+   EOF
+   python3 ... --full-context /tmp/council-ctx.txt
+   ```
+   The `--full-context` flag injects the full text into every subagent's prompt so the entire council debates with the full background.
+3. **Enrich the question with session context** — scan your recent session for relevant constraints, decisions, background facts, dead ends already ruled out, and any context that explains *why* the user is asking this question. Append a concise "Given that: ..." clause (2–4 key facts) to the question so the council debates with full context.
+4. **Run the council** via `python3 ~/.hermes/skills/thinking/council/scripts/orchestrate.py full --mode <mode> --question "<enriched_question>"` (add `--full-context /tmp/council-ctx.txt` if you wrote context in step 2)
+5. **Read the outputs** from `/tmp/hermes-council/`
+6. **Synthesize and present** the decision landscape in readable markdown
 
-The council spawns independent Hermes processes with blank context windows. They have no access to your session history. If you don't enrich the question, they debate the question in isolation — missing the very context that makes the question meaningful. This is especially important when the user has been discussing the topic for a while before invoking `/council`.
+The council spawns independent Hermes processes with blank context windows. They have no access to your session history. If you don't enrich the question or provide `--full-context`, they debate the question in isolation — missing the very context that makes the question meaningful. This is especially important when the user has been discussing the topic for a while before invoking `/council`.
 
 If you answer the question yourself instead of running the council, you are defeating the entire purpose of this skill. The council exists precisely because a single-agent answer is less valuable than multi-perspective structured debate.
 
@@ -51,12 +61,16 @@ The agents are **not generic archetypes** (Architect, Engineer, etc.). They are 
 ```
                     ┌─ quick:   P0 ─► P1 ─► P2a
                     │─ medium:  P0 ─► P1 ─► P2a ─► P2b
-                    └─ deep:    P0 ─► P1 ─► P2a ─► P2b ─► P3
+                    ├─ deep:    P0 ─► P1 ─► P2a ─► P2b ─► P3
+                    └─ hybrid:  P0 ─► P1 ─► P2a ─► P2b ─► ENSEMBLE
 
-  COMPOSE ──► PREMORTEM ──► POSITION ──► CROSS-A ──► CROSS-B ──► ASSUMPTION MAP
-       │           │              │            │           │             │
-   single       parallel       parallel     parallel    parallel     parallel
-   agent        hermes -z      hermes -z    hermes -z   hermes -z    hermes -z
+  COMPOSE ──► PREMORTEM ──► POSITION ──► CROSS-A ──► CROSS-B
+       │           │              │            │           │
+   single       parallel       parallel     parallel    parallel
+   agent        hermes -z      hermes -z    hermes -z   hermes -z
+                                                                   
+                                                       ┌─► ASSUMPTION MAP (deep)
+                                                       └─► ENSEMBLE (hybrid — independent estimation)
 ```
 
 | Phase | What Happens | Method |
@@ -65,9 +79,10 @@ The agents are **not generic archetypes** (Architect, Engineer, etc.). They are 
 | **0b: Premortem** | Each agent independently writes a history of how the decision **failed** — before any positions are formed. Bypasses positional commitment, surfaces shared assumptions | Parallel `hermes -z` |
 | **1: Position** | Each agent forms an independent initial position on the question, without seeing others | Parallel `hermes -z` |
 | **2a: Cross-examine (Probe)** | Each agent receives all others' positions and **probes for reasoning** — "why do you believe X?" Research shows this is the strongest predictor of group performance gain (R=0.41) | Parallel `hermes -z` |
-| **2b: Cross-examine (Reflect)** (*medium/deep*) | Each agent reflects on what they heard from others — identifies concessions, remaining disagreements, and what evidence would close each gap | Parallel `hermes -z` |
+| **2b: Cross-examine (Reflect)** (*medium/deep/hybrid*) | Each agent reflects on what they heard from others — identifies concessions, remaining disagreements, and what evidence would close each gap | Parallel `hermes -z` |
 | **3: Assumption Map** (*deep only*) | Each agent identifies: what assumptions would need to be true for opposing positions to be correct; where evidence is insufficient; unique risk vectors. **Not convergence** — produces a divergence map | Parallel `hermes -z` |
-| **Synthesis** | Main agent reads all outputs across all rounds and produces a **decision landscape**: shared concerns, genuine disagreement, assumptions per position, evidence gaps, risk vectors | Direct |
+| **3b: Ensemble Estimation** (*hybrid only*) | Each agent independently estimates key dimensions (confidence, risk, success likelihood, uncertainty) — no cross-agent contamination. Aggregated by median to produce robust consensus with dispersion metrics. The antidote to the council's correlated-error weakness. | Parallel `hermes -z` |
+| **Synthesis** | Main agent reads all outputs across all rounds and produces a **decision landscape**: shared concerns, genuine disagreement, assumptions per position, evidence gaps, risk vectors, ensemble estimates | Direct |
 
 ### Effort Levels
 
@@ -76,6 +91,7 @@ The agents are **not generic archetypes** (Architect, Engineer, etc.). They are 
 | `quick` | 3 | P0 → P1 → P2a | 9 | Low-stakes checks, quick friction |
 | `medium` (default) | **5** | P0 → P1 → P2a → P2b | 16 | Standard decisions |
 | `deep` | **5–7** | P0 → P1 → P2a → P2b → Assumption Map | ~20 | Architecture, strategy, high-friction deliberation |
+| `hybrid` | **5–7** | P0 → P1 → P2a → P2b → Ensemble | ~21 | Council for decomposition, ensemble for estimation |
 
 ### Compose Phase (The Key Innovation)
 
@@ -163,6 +179,7 @@ The `/council` skill is triggered **automatically** when the user asks any quest
 | `/council "question"` (any mode) | Run council in specified mode |
 | `/council quick "question"` | 3 agents, P0→P1→P2a |
 | `/council deep "question"` | 5-7 agents, full protocol |
+| `/council hybrid "question"` | 5-7 agents, council + independent ensemble |
 | "Let's get multiple perspectives on X" | Run council, medium mode |
 | "What would experts say about X" | Run council, medium mode |
 | "Debate this: X" or "Council this: X" | Run council, medium mode |
