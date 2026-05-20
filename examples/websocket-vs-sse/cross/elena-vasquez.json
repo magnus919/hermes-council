@@ -1,0 +1,12 @@
+{
+  "revised_position": "SSE should be the default choice for unidirectional server-to-client notification workloads. WebSocket's bidirectional capability is a complexity tax that most notification systems pay without ever collecting the benefit. My position is grounded in operational reality: when a connection drops with SSE, you get an HTTP status code, a response body, and clear browser console errors pointing at the exact failure — timing out, proxy teardown, certificate mismatch. When a WebSocket drops, you get a `CloseEvent` with a code that might mean 'going away' or 'policy violation' or 'the load balancer's idle timeout fired because the ops team set it to 60s and nobody told engineering.' I've spent enough 3AM sessions staring at Chrome DevTools trying to reconstruct why a WebSocket silently evaporated to know which failure mode I'd rather debug. That said, WebSocket is irreplaceable for truly bidirectional protocols — collaborative editing, live market data with order entry, multiplayer game state — where the client isn't just consuming but also producing at equivalent frequency. The error is applying WebSocket to workloads where 95% of the bytes travel server→client, because you're absorbing all the bidirectional operational complexity for 5% utilization. The line I draw: if your reconnect strategy is 'HTTP-based backoff,' you should probably just use SSE.",
+  "conceded_to": [],
+  "disagrees_with": [],
+  "new_insights": [
+    "The decision isn't binary — many applications benefit from a hybrid approach where SSE handles the notification stream and a lightweight fetch-based endpoint handles the occasional client-to-server action, avoiding WebSocket entirely.",
+    "An often-overlooked factor: SSE's automatic reconnection behavior across browsers is surprisingly consistent now, while WebSocket reconnection is entirely application-level code that varies wildly in quality across implementations.",
+    "Proxy infrastructure (nginx, HAProxy, cloud LBs) has non-configurable idle timeouts that silently kill WebSocket connections — SSE at least surfaces these as HTTP-level failures that ops teams know how to read.",
+    "The WebSocket complexity bet isn't just about the protocol — it's about operational maturity: do you have tooling to inspect active WebSocket connections? Do your load balancers support sticky sessions or a shared session store? SSE sidesteps the entire stateful-proxy problem."
+  ],
+  "updated_confidence": 0.92
+}
