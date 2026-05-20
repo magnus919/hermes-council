@@ -20,6 +20,21 @@ triggers:
 
 # /council — Multi-Agent Structured Debate
 
+## 🔴 MANDATORY: You MUST delegate, not answer
+
+When the user invokes `/council "question"` or asks a question that triggers this skill, **you MUST NOT answer the question yourself.** Your job is to be the **orchestrator** — you run the council, read its outputs, and present the decision landscape to the user.
+
+The correct workflow is:
+
+1. **Extract the question** from the user's invocation
+2. **Run the council** via `python3 ~/.hermes/skills/thinking/council/scripts/orchestrate.py full --mode <mode> --question "<question>"`
+3. **Read the outputs** from `/tmp/hermes-council/`
+4. **Synthesize and present** the decision landscape in readable markdown
+
+If you answer the question yourself instead of running the council, you are defeating the entire purpose of this skill. The council exists precisely because a single-agent answer is less valuable than multi-perspective structured debate.
+
+**Do not summarize. Do not pre-empt. Delegate.**
+
 ## What It Is
 
 `/council` spawns a panel of **custom-composed expert agents** to debate any question. Unlike a single agent reasoning in monologue, Council produces **genuine multi-perspective analysis** — independent agents with distinct backgrounds, biases, and analytical approaches engage in structured rounds of debate, then converge on findings.
@@ -138,11 +153,22 @@ Phases: [list]
 
 ## Activation
 
-The skill auto-routes on:
-- `/council "question"` — medium mode (default)
-- `/council quick "question"` — fast check, 2 rounds, 3 agents
-- `/council deep "question"` — full protocol, 3 rounds, 5-6 agents
-- Phrases like "let's get multiple perspectives", "what would experts say", "debate this", "council"
+The `/council` skill is triggered **automatically** when the user asks any question that would benefit from multi-perspective structured debate. The following signal phrases MUST trigger the council — do not answer these questions yourself:
+
+| Signal Phrase | Required Action |
+|---|---|
+| `/council "question"` (any mode) | Run council in specified mode |
+| `/council quick "question"` | 3 agents, P0→P1→P2a |
+| `/council deep "question"` | 5-7 agents, full protocol |
+| "Let's get multiple perspectives on X" | Run council, medium mode |
+| "What would experts say about X" | Run council, medium mode |
+| "Debate this: X" or "Council this: X" | Run council, medium mode |
+| "High-friction question: X" | Run council, deep mode |
+| Any question about when to use /council itself | Run council, deep mode (meta) |
+
+**If the user is asking about the council itself** — how many rounds, what mode, what composition — that's a meta-question that should go through the council in deep mode. Do not answer from your own knowledge.
+
+If unsure whether a question qualifies, err on the side of running the council. The cost of an unnecessary council is small (a few minutes). The cost of answering a council-worthy question yourself is losing the multi-perspective insight the user came for.
 
 ## Inference
 
