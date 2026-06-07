@@ -31,11 +31,11 @@ Usage:
   python3 orchestrate.py full --mode quick|medium|deep|hybrid --question "..." [--agents N]
 """
 
-import json, os, subprocess, sys, time, glob, threading
+import json, os, subprocess, sys, time, glob, threading, uuid
 from pathlib import Path
 HERMES = str(Path.home() / ".local/bin" / ".hermes-real")
 ENV_FILE = str(Path.home() / ".hermes" / ".env")
-STATE_DIR = "/tmp/hermes-council"
+STATE_DIR = f"/tmp/hermes-council/{uuid.uuid4().hex[:12]}"
 
 # Full context loaded from --full-context flag, appended to every agent prompt
 FULL_CONTEXT = ""
@@ -626,6 +626,7 @@ if __name__ == "__main__":
             default_agents = max(default_agents, 5)
 
         print(f"=== COUNCIL [{mode.upper()}] ===")
+        print(f"Council state: {STATE_DIR}/")
         print(f"Question: {topic}")
         print(f"Agents: {default_agents}")
         print(f"Phases: ", end="")
