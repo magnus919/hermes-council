@@ -18,6 +18,8 @@ triggers:
   - /council deep "question"
   - /council hybrid "question"
   - /council premortem "question"
+license: MIT
+metadata.hermes.tags: []
 ---
 
 # /council — Multi-Agent Structured Debate
