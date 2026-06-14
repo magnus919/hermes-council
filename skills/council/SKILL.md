@@ -1,24 +1,16 @@
 ---
-name: council
-title: /council — Multi-Agent Structured Debate
-description: >-
-  Spawn a panel of custom-composed expert agents to debate any question.
-  Structured rounds: premortem → position → cross-examine (probe + reflect)
-  → assumption map. Zero new Hermes infrastructure — pure hermes -z oneshot processes.
-version: 0.1.0
-author: Jasper
-tags: [debate, multi-agent, council, thinking, reasoning]
+name: "council"
+title: "/council \u2014 Multi-Agent Structured Debate"
+description: "Use when spawn a panel of custom-composed expert agents to debate any question. Structured rounds: premortem \u2192 position \u2192 cross-examine (probe + reflect) \u2192 assumption map. Zero new Hermes infrastructure \u2014 pure hermes -z oneshot processes."
+version: "0.1.0"
+author: "Jasper"
+tags: ["debate", "multi-agent", "council", "thinking", "reasoning"]
 metadata:
   hermes:
-    category: thinking
-    requires_toolsets: [delegation]
-triggers:
-  - /council "question"
-  - /council quick "question"
-  - /council deep "question"
-  - /council hybrid "question"
-  - /council premortem "question"
----
+    category: "thinking"
+    requires_toolsets: ["delegation"]
+triggers: ["/council \"question\"", "/council quick \"question\"", "/council deep \"question\"", "/council hybrid \"question\"", "/council premortem \"question\""]
+----
 
 # /council — Multi-Agent Structured Debate
 
