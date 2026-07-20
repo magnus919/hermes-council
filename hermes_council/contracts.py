@@ -224,6 +224,10 @@ class ModelUsage(Contract):
     role: NonEmptyStr
     calls: int = Field(ge=0)
     tokens: int = Field(ge=0)
+    input_tokens: int = Field(default=0, ge=0)
+    output_tokens: int = Field(default=0, ge=0)
+    cache_read_tokens: int = Field(default=0, ge=0)
+    cache_write_tokens: int = Field(default=0, ge=0)
     provider: NonEmptyStr | None = None
     model: NonEmptyStr | None = None
 
@@ -232,6 +236,8 @@ class Usage(Contract):
     calls: int = Field(ge=0)
     input_tokens: int = Field(default=0, ge=0)
     output_tokens: int = Field(default=0, ge=0)
+    cache_read_tokens: int = Field(default=0, ge=0)
+    cache_write_tokens: int = Field(default=0, ge=0)
     repairs: int = Field(default=0, ge=0)
     estimated_cost: float | None = Field(default=None, ge=0)
     model_usage: list[ModelUsage] = Field(default_factory=list)

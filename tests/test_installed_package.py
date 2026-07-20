@@ -1,7 +1,7 @@
 import importlib.metadata
 import os
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 
 class InstalledPackageTest(unittest.TestCase):
@@ -23,7 +23,7 @@ class InstalledPackageTest(unittest.TestCase):
         with patch.dict(os.environ, {}, clear=True):
             with patch("subprocess.Popen") as popen:
                 plugin = entry_point.load()
-                plugin.register(object())
+                plugin.register(Mock())
 
         self.assertEqual("hermes_council", plugin.__name__)
         popen.assert_not_called()
