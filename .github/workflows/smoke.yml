@@ -16,4 +16,4 @@ jobs:
       - run: uv build
       - run: uv venv --python 3.11 /tmp/hermes-council-venv
       - run: uv pip install --python /tmp/hermes-council-venv/bin/python dist/*.whl
-      - run: cd /tmp && /tmp/hermes-council-venv/bin/python "$GITHUB_WORKSPACE/tests/test_installed_package.py"
+      - run: cd /tmp && /tmp/hermes-council-venv/bin/python -m unittest discover -s "$GITHUB_WORKSPACE/tests" -p 'test_*.py'

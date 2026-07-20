@@ -9,6 +9,7 @@ description = "Hermes Agent council plugin foundation"
 readme = "README.md"
 requires-python = ">=3.11"
 license = { file = "LICENSE" }
+dependencies = ["pydantic>=2.13,<3"]
 
 [project.entry-points."hermes_agent.plugins"]
 hermes-council = "hermes_council"
